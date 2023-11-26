@@ -1,25 +1,34 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, simpledialog, messagebox
 import re
 import docx
 
 class SpellChecker:
     def __init__(self, dictionary_file):
+        self.dictionary_file = dictionary_file
         self.dictionary = set()
-        self.load_dictionary(dictionary_file)
+        self.load_dictionary()
 
-    def load_dictionary(self, dictionary_file):
+    def load_dictionary(self):
         try:
-            with open(dictionary_file, 'r', encoding='utf-8') as file:
+            with open(self.dictionary_file, 'r', encoding='utf-8') as file:
                 for line in file:
                     word = line.strip().lower()
                     self.dictionary.add(word)
         except FileNotFoundError:
-            print(f"Error: Dictionary file '{dictionary_file}' not found.")
+            print(f"Error: Dictionary file '{self.dictionary_file}' not found.")
             exit(1)
         except Exception as e:
             print(f"An error occurred while loading the dictionary: {e}")
             exit(1)
+
+    def add_to_dictionary(self, word):
+        # Add a word to the dictionary file
+        with open(self.dictionary_file, 'a', encoding='utf-8') as file:
+            file.write(word.lower() + '\n')
+
+        # Update the dictionary set
+        self.dictionary.add(word.lower())
 
     def check_spelling(self, file_path):
         misspelled_words = set()
@@ -62,9 +71,9 @@ class SpellCheckerGUI:
         self.master = master
         self.master.title("Spell Checker")
 
-        default_dictionary_file = 'words.txt'
+        dictionary_file = 'words.txt'
 
-        self.dictionary_label = tk.Label(master, text=f"Dictionary File: {default_dictionary_file}")
+        self.dictionary_label = tk.Label(master, text=f"Dictionary File: {dictionary_file}")
         self.dictionary_label.grid(row=0, column=0, padx=10, pady=5)
 
         self.text_label = tk.Label(master, text="File to Check:")
@@ -82,7 +91,10 @@ class SpellCheckerGUI:
         self.result_text = tk.Text(master, height=10, width=50)
         self.result_text.grid(row=3, column=0, columnspan=3, pady=10)
 
-        self.spell_checker = SpellChecker(default_dictionary_file)
+        self.spell_checker = SpellChecker(dictionary_file)
+
+        self.add_to_dict_button = tk.Button(master, text="Add to Dictionary", command=self.add_to_dictionary)
+        self.add_to_dict_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     def browse_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt"), ("Word Files", "*.docx")])
@@ -106,6 +118,15 @@ class SpellCheckerGUI:
 
         self.result_text.delete(1.0, tk.END)
         self.result_text.insert(tk.END, result)
+
+    def add_to_dictionary(self):
+        # Get the misspelled word from the user
+        misspelled_word = simpledialog.askstring("Add to Dictionary", "Enter misspelled word:")
+
+        # Add the word to the dictionary
+        if misspelled_word:
+            self.spell_checker.add_to_dictionary(misspelled_word)
+            messagebox.showinfo("Word Added", f"The word '{misspelled_word}' has been added to the dictionary.")
 
 def main():
     root = tk.Tk()
