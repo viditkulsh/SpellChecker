@@ -1,2 +1,3 @@
-Hella My name is Vidit.
-Howr are you? 
+Hello
+Howr are you?
+I'm gutt.

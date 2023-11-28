@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox
 import re
 import docx
+from spellchecker import SpellChecker as PySpellChecker
 
 class SpellChecker:
     def __init__(self, dictionary_file):
@@ -66,6 +67,10 @@ class SpellChecker:
         # Remove non-alphabetic characters from the word
         return ''.join(char.lower() for char in word if char.isalpha())
 
+    def get_suggestions(self, misspelled_word):
+        spell = PySpellChecker()
+        return spell.candidates(misspelled_word)
+
 class SpellCheckerGUI:
     def __init__(self, master):
         self.master = master
@@ -96,6 +101,15 @@ class SpellCheckerGUI:
         self.add_to_dict_button = tk.Button(master, text="Add to Dictionary", command=self.add_to_dictionary)
         self.add_to_dict_button.grid(row=4, column=0, columnspan=2, pady=10)
 
+        # self.suggestions_button = tk.Button(master, text="Get Suggestions", command=self.get_suggestions)
+        # self.suggestions_button.grid(row=5, column=0, columnspan=2, pady=10)
+
+        # self.change_word_button = tk.Button(master, text="Change Word", command=self.change_word)
+        # self.change_word_button.grid(row=6, column=0, columnspan=2, pady=10)
+
+        self.selected_misspelled_word = None
+        self.selected_suggestion = None
+
     def browse_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt"), ("Word Files", "*.docx")])
         self.text_entry.delete(0, tk.END)
@@ -120,13 +134,33 @@ class SpellCheckerGUI:
         self.result_text.insert(tk.END, result)
 
     def add_to_dictionary(self):
-        # Get the misspelled word from the user
         misspelled_word = simpledialog.askstring("Add to Dictionary", "Enter misspelled word:")
-
-        # Add the word to the dictionary
         if misspelled_word:
             self.spell_checker.add_to_dictionary(misspelled_word)
             messagebox.showinfo("Word Added", f"The word '{misspelled_word}' has been added to the dictionary.")
+
+    def get_suggestions(self):
+        selected_word_info = self.result_text.tag_prevrange("sel", 1.0)
+        if selected_word_info:
+            start, end = selected_word_info
+            self.selected_misspelled_word = self.result_text.get(start, end)
+            suggestions = self.spell_checker.get_suggestions(self.selected_misspelled_word)
+            if suggestions:
+                suggestion_str = ', '.join(suggestions)
+                self.selected_suggestion = simpledialog.askstring(
+                    "Select Suggestion", f"Choose a suggestion for '{self.selected_misspelled_word}':\n{suggestion_str}"
+                )
+
+    def change_word(self):
+        if self.selected_misspelled_word and self.selected_suggestion:
+            text_content = self.result_text.get(1.0, tk.END)
+            updated_content = text_content.replace(self.selected_misspelled_word, self.selected_suggestion)
+
+            self.result_text.delete(1.0, tk.END)
+            self.result_text.insert(tk.END, updated_content)
+            messagebox.showinfo("Change Word", f"Word changed to: {self.selected_suggestion}")
+        else:
+            messagebox.showinfo("Change Word", "Please select a misspelled word and its suggestion first.")
 
 def main():
     root = tk.Tk()
@@ -135,3 +169,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
